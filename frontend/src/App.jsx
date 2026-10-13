@@ -35,6 +35,15 @@ import BusinessIcon from '@mui/icons-material/Business'
 import WorkIcon from '@mui/icons-material/Work'
 import SearchIcon from '@mui/icons-material/Search'
 import PersonIcon from '@mui/icons-material/Person'
+import AddIcon from '@mui/icons-material/Add'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
 
 // Sample employee data
 const sampleEmployees = [
@@ -113,12 +122,17 @@ const sampleEmployees = [
 ]
 
 function App() {
+  const [employees, setEmployees] = useState(sampleEmployees)
   const [searchTerm, setSearchTerm] = useState('')
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingEmployee, setEditingEmployee] = useState(null)
+  const [formData, setFormData] = useState({ name: '', email: '', department: '', position: '', status: 'Active' })
+  const [formErrors, setFormErrors] = useState({})
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  const filteredEmployees = sampleEmployees.filter((employee) => {
+  const filteredEmployees = employees.filter((employee) => {
     const matchesName = employee.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesDepartment = employee.department.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesName || matchesDepartment
@@ -145,6 +159,61 @@ function App() {
       default:
         return 'default'
     }
+  }
+
+  const openAddDialog = () => {
+    setEditingEmployee(null)
+    setFormData({ name: '', email: '', department: '', position: '', status: 'Active' })
+    setFormErrors({})
+    setDialogOpen(true)
+  }
+
+  const openEditDialog = (employee) => {
+    setEditingEmployee(employee)
+    setFormData({
+      name: employee.name,
+      email: employee.email,
+      department: employee.department,
+      position: employee.position,
+      status: employee.status,
+    })
+    setFormErrors({})
+    setDialogOpen(true)
+  }
+
+  const handleDelete = (id) => {
+    if (window.confirm('Delete this employee?')) {
+      setEmployees((prev) => prev.filter((e) => e.id !== id))
+    }
+  }
+
+  const validateForm = () => {
+    const errors = {}
+    if (!formData.name || formData.name.trim() === '') errors.name = 'Name is required'
+    if (!formData.email || formData.email.trim() === '') errors.email = 'Email is required'
+    if (!formData.department || formData.department.trim() === '') errors.department = 'Department is required'
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleSave = () => {
+    if (!validateForm()) return
+    if (editingEmployee) {
+      setEmployees((prev) => prev.map((e) => (e.id === editingEmployee.id ? { ...e, ...formData } : e)))
+    } else {
+      const newEmployee = {
+        id: Date.now(),
+        ...formData,
+      }
+      setEmployees((prev) => [...prev, newEmployee])
+    }
+    setDialogOpen(false)
+    setFormData({ name: '', email: '', department: '', position: '', status: 'Active' })
+    setEditingEmployee(null)
+  }
+
+  const handleFormChange = (field) => (e) => {
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }))
   }
 
   return (
@@ -216,7 +285,7 @@ function App() {
                   </Avatar>
                   <Box>
                     <Typography variant="h5" component="div">
-                      {sampleEmployees.length}
+                      {employees.length}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Employees
@@ -237,7 +306,7 @@ function App() {
                   <Box>
                     <Typography variant="h5" component="div">
                       {
-                        new Set(sampleEmployees.map((emp) => emp.department)).size
+                        new Set(employees.map((emp) => emp.department)).size
                       }
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -259,7 +328,7 @@ function App() {
                   <Box>
                     <Typography variant="h5" component="div">
                       {
-                        sampleEmployees.filter((emp) => emp.status === 'Active').length
+                        employees.filter((emp) => emp.status === 'Active').length
                       }
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -274,9 +343,14 @@ function App() {
 
         {/* Employee Directory */}
         <Paper sx={{ p: 3 }} elevation={3}>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <SearchIcon color="action" />
-            <Typography variant="h6">Employee Directory</Typography>
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <SearchIcon color="action" />
+              <Typography variant="h6">Employee Directory</Typography>
+            </Box>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => openAddDialog()} size="small">
+              Add Employee
+            </Button>
           </Box>
 
           <TextField
@@ -303,6 +377,7 @@ function App() {
                     <TableCell>Department</TableCell>
                     <TableCell>Position</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -339,6 +414,16 @@ function App() {
                           variant="filled"
                         />
                       </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton size="small" color="primary" onClick={() => openEditDialog(employee)} aria-label="edit">
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" color="error" onClick={() => handleDelete(employee.id)} aria-label="delete">
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -346,6 +431,64 @@ function App() {
             </TableContainer>
           )}
         </Paper>
+
+        {/* Add/Edit Dialog */}
+        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>{editingEmployee ? 'Edit Employee' : 'Add Employee'}</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField
+                label="Name"
+                value={formData.name}
+                onChange={handleFormChange('name')}
+                error={!!formErrors.name}
+                helperText={formErrors.name || ''}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Email"
+                value={formData.email}
+                onChange={handleFormChange('email')}
+                error={!!formErrors.email}
+                helperText={formErrors.email || ''}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Department"
+                value={formData.department}
+                onChange={handleFormChange('department')}
+                error={!!formErrors.department}
+                helperText={formErrors.department || ''}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Position"
+                value={formData.position}
+                onChange={handleFormChange('position')}
+                fullWidth
+              />
+              <TextField
+                select
+                label="Status"
+                value={formData.status}
+                onChange={handleFormChange('status')}
+                fullWidth
+                SelectProps={{ native: true }}
+              >
+                <option value="Active">Active</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Inactive">Inactive</option>
+              </TextField>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDialogOpen(false)} color="inherit">Cancel</Button>
+            <Button onClick={handleSave} variant="contained" color="primary">Save</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   )
