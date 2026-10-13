@@ -140,7 +140,7 @@ function App() {
   })
 
   useEffect(() => {
-    fetch('http://localhost:8000/employees')
+    fetch('http://localhost:8000/employees', { mode: 'cors' })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load employees')
         return res.json()
@@ -323,10 +323,18 @@ function App() {
         <Toolbar />
 
         {loading && (
-          <Box sx={{ textAlign: 'center', py: 4 }}><Typography>Loading employees...</Typography></Box>
+          <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }} elevation={1}>
+            <Box sx={{ mb: 2 }}><Typography variant="h6" color="primary">Loading dashboard...</Typography></Box>
+            <Typography color="text.secondary">Fetching employees from server</Typography>
+          </Paper>
         )}
         {error && (
-          <Box sx={{ textAlign: 'center', py: 2, color: 'error.main' }}><Typography>{error}</Typography></Box>
+          <Paper sx={{ p: 3, mb: 4, bgcolor: '#fff3e0', borderLeft: 4, borderColor: 'warning.main' }} elevation={2}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography color="error" fontWeight={600}>Connection issue:</Typography>
+              <Typography color="text.secondary">{error}</Typography>
+            </Box>
+          </Paper>
         )}
 
         {!loading && !error && (
@@ -399,7 +407,7 @@ function App() {
         </Grid>
 
         {/* Employee Directory */}
-        <Paper sx={{ p: 3 }} elevation={3}>
+        <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 3 }} elevation={4}>
           <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <SearchIcon color="action" />
