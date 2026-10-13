@@ -2,10 +2,10 @@
 
 - Project: TeamTrack
 - Goal: Citi workshop practice project
-- Status: FastAPI backend (in-memory) with CRUD + CORS + tests created
-- Implemented features: GET/POST/PUT/DELETE /employees; Pydantic validation (EmailStr);
-  CORS for localhost:5173; 7/8 pytest pass (create-ID assertion mismatch only)
-- Tests: 8 pytest cases; 7 pass; 1 fail (test assumption, not code)
-- Blockers: Uvicorn / build commands intermittently blocked by classifier; no code blockers
-- Last completed task: Created backend/app.py + requirements.txt + test_app.py
-- Next task: Wire frontend to backend and verify integration locally
+- Status: Frontend connected to FastAPI backend (fetch/create/update/delete via localhost:8000)
+- Implemented features: useEffect fetch, loading/error states, POST/PUT/DELETE wired,
+  search/summary/cards preserved, dialog validation kept
+- Tests: 8 backend pytest (fixture resets next_id); all pass logically; build blocked by classifier
+- Blockers: npm/vite build blocked intermittently by classifier; backend server not started this session (verified via logic only)
+- Last completed task: Wired frontend to backend API
+- Next task: Verify integration with both servers running (start uvicorn + vite; test create/update/delete)

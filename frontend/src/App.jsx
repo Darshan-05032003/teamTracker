@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import {
   AppBar,
@@ -122,7 +122,9 @@ const sampleEmployees = [
 ]
 
 function App() {
-  const [employees, setEmployees] = useState(sampleEmployees)
+  const [employees, setEmployees] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -137,6 +139,22 @@ function App() {
     const matchesDepartment = employee.department.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesName || matchesDepartment
   })
+
+  useEffect(() => {
+    fetch('http://localhost:8000/employees')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load employees')
+        return res.json()
+      })
+      .then((data) => {
+        setEmployees(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        setError(err.message || 'Could not connect to server')
+        setLoading(false)
+      })
+  }, [])
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value)
@@ -183,7 +201,15 @@ function App() {
 
   const handleDelete = (id) => {
     if (window.confirm('Delete this employee?')) {
-      setEmployees((prev) => prev.filter((e) => e.id !== id))
+      fetch(`http://localhost:8000/employees/${id}`, { method: 'DELETE' })
+        .then((res) => {
+          if (res.status === 204 || res.ok) {
+            setEmployees((prev) => prev.filter((e) => e.id !== id))
+          } else {
+            throw new Error('Delete failed')
+          }
+        })
+        .catch((err) => setError(err.message))
     }
   }
 
@@ -199,17 +225,40 @@ function App() {
   const handleSave = () => {
     if (!validateForm()) return
     if (editingEmployee) {
-      setEmployees((prev) => prev.map((e) => (e.id === editingEmployee.id ? { ...e, ...formData } : e)))
+      fetch(`http://localhost:8000/employees/${editingEmployee.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Update failed')
+          return res.json()
+        })
+        .then((updated) => {
+          setEmployees((prev) => prev.map((e) => (e.id === updated.id ? updated : e)))
+          setDialogOpen(false)
+          setFormData({ name: '', email: '', department: '', position: '', status: 'Active' })
+          setEditingEmployee(null)
+        })
+        .catch((err) => setError(err.message))
     } else {
-      const newEmployee = {
-        id: Date.now(),
-        ...formData,
-      }
-      setEmployees((prev) => [...prev, newEmployee])
+      fetch('http://localhost:8000/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Create failed')
+          return res.json()
+        })
+        .then((newEmp) => {
+          setEmployees((prev) => [...prev, newEmp])
+          setDialogOpen(false)
+          setFormData({ name: '', email: '', department: '', position: '', status: 'Active' })
+          setEditingEmployee(null)
+        })
+        .catch((err) => setError(err.message))
     }
-    setDialogOpen(false)
-    setFormData({ name: '', email: '', department: '', position: '', status: 'Active' })
-    setEditingEmployee(null)
   }
 
   const handleFormChange = (field) => (e) => {
@@ -274,6 +323,15 @@ function App() {
       <Box component="main" sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` }, ml: { md: `${drawerWidth}px` } }}>
         <Toolbar />
 
+        {loading && (
+          <Box sx={{ textAlign: 'center', py: 4 }}><Typography>Loading employees...</Typography></Box>
+        )}
+        {error && (
+          <Box sx={{ textAlign: 'center', py: 2, color: 'error.main' }}><Typography>{error}</Typography></Box>
+        )}
+
+        {!loading && !error && (
+          <>
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={4}>
@@ -489,6 +547,8 @@ function App() {
             <Button onClick={handleSave} variant="contained" color="primary">Save</Button>
           </DialogActions>
         </Dialog>
+          </>
+        )}
       </Box>
     </Box>
   )
