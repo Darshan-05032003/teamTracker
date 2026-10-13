@@ -5,15 +5,14 @@ from app import app, employees, next_id
 client = TestClient(app)
 
 def reset_employees():
-    # Clear and reseed using the same seed data
     employees.clear()
-    seed_items = [
-        {"name":"John Doe","email":"john.doe@company.com","department":"Engineering","position":"Software Engineer","status":"Active"},
-        {"name":"Jane Smith","email":"jane.smith@company.com","department":"Marketing","position":"Marketing Manager","status":"Active"},
-        {"name":"Robert Johnson","email":"robert.johnson@company.com","department":"Engineering","position":"DevOps Engineer","status":"On Leave"},
-    ]
-    for idx, item in enumerate(seed_items, start=1):
-        employees.append({"id": idx, **item})
+    employees.extend([
+        {"id": 1, "name":"John Doe","email":"john.doe@company.com","department":"Engineering","position":"Software Engineer","status":"Active"},
+        {"id": 2, "name":"Jane Smith","email":"jane.smith@company.com","department":"Marketing","position":"Marketing Manager","status":"Active"},
+        {"id": 3, "name":"Robert Johnson","email":"robert.johnson@company.com","department":"Engineering","position":"DevOps Engineer","status":"On Leave"},
+    ])
+    import app as app_module
+    app_module.next_id = 4
 
 @pytest.fixture(autouse=True)
 def setup():
